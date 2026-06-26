@@ -2,11 +2,15 @@ namespace TactiqAPI.DTOs;
 
 public class BuildTeamsRequest
 {
+    public int TeamSize { get; set; } = 7;
+    public string? Formation { get; set; }
     public List<int> PlayerIds { get; set; } = [];
 }
 
 public class BuildTeamsResponse
 {
+    public int TeamSize { get; set; }
+    public string? Formation { get; set; }
     public double BalancePercentage { get; set; }
     public int PositionBalancePenalty { get; set; }
     public double TeamAScore { get; set; }

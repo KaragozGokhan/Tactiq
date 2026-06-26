@@ -85,16 +85,6 @@ namespace TactiqAPI.Migrations
                     b.ToTable("MatchPlayers");
                 });
 
-            modelBuilder.Entity("TactiqAPI.Models.Match", b =>
-                {
-                    b.HasOne("TactiqAPI.Models.User", "CreatedByUser")
-                        .WithMany("Matches")
-                        .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.Navigation("CreatedByUser");
-                });
-
             modelBuilder.Entity("TactiqAPI.Models.Player", b =>
                 {
                     b.Property<int>("Id")
@@ -109,6 +99,17 @@ namespace TactiqAPI.Migrations
                     b.Property<int>("CreatedByUserId")
                         .HasColumnType("integer");
 
+                    b.Property<int>("Def")
+                        .HasColumnType("integer")
+                        .HasColumnName("def");
+
+                    b.Property<int>("Dribbling")
+                        .HasColumnType("integer")
+                        .HasColumnName("dribbling");
+
+                    b.Property<int>("Form")
+                        .HasColumnType("integer");
+
                     b.Property<double?>("Height")
                         .HasColumnType("double precision");
 
@@ -116,9 +117,37 @@ namespace TactiqAPI.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int>("Overall")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Pace")
+                        .HasColumnType("integer")
+                        .HasColumnName("pace");
+
+                    b.Property<int>("Pass")
+                        .HasColumnType("integer")
+                        .HasColumnName("pass");
+
+                    b.Property<int>("Phy")
+                        .HasColumnType("integer")
+                        .HasColumnName("phy");
+
+                    b.Property<string>("Playstyles")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("playstyles");
+
                     b.Property<string>("Position")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<string>("PrimaryPlaystyle")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Shoot")
+                        .HasColumnType("integer")
+                        .HasColumnName("shoot");
 
                     b.Property<string>("StrongFoot")
                         .IsRequired()
@@ -156,6 +185,9 @@ namespace TactiqAPI.Migrations
 
                     b.Property<int>("PlayerId")
                         .HasColumnType("integer");
+
+                    b.Property<double>("Rating")
+                        .HasColumnType("double precision");
 
                     b.Property<int>("Saves")
                         .HasColumnType("integer");
@@ -211,6 +243,16 @@ namespace TactiqAPI.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("TactiqAPI.Models.Match", b =>
+                {
+                    b.HasOne("TactiqAPI.Models.User", "CreatedByUser")
+                        .WithMany("Matches")
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("CreatedByUser");
                 });
 
             modelBuilder.Entity("TactiqAPI.Models.MatchPlayer", b =>

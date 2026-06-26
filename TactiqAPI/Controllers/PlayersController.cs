@@ -47,27 +47,72 @@ public class PlayersController : ControllerBase
         return Ok(ToDto(player));
     }
 
+    // DÜZELTİLEN KISIM: Varsayılan POST metodu artık doğrudan liste (array) kabul ediyor.
+    // Tekli endpoint kaldırıldı, Swagger'da direkt 16 kişiyi buraya yapıştırabilirsin.
     [HttpPost]
-    public async Task<ActionResult<PlayerDto>> CreatePlayer([FromBody] CreatePlayerRequest request)
+    public async Task<ActionResult<IEnumerable<PlayerDto>>> CreatePlayers([FromBody] List<CreatePlayerRequest> requests)
     {
-        var validationError = ValidatePlayerRequest(request.Name, request.Position, request.StrongFoot, request.Height, request.Weight);
-        if (validationError is not null)
-            return BadRequest(new { message = validationError });
+        if (requests == null || requests.Count == 0)
+            return BadRequest(new { message = "En az bir oyuncu gönderilmelidir." });
 
-        var player = new Player
+        var userId = GetCurrentUserId();
+        var players = new List<Player>();
+
+        foreach (var request in requests)
         {
-            Name = request.Name.Trim(),
-            Position = request.Position.Trim(),
-            StrongFoot = NormalizeStrongFoot(request.StrongFoot),
-            Height = request.Height,
-            Weight = request.Weight,
-            CreatedByUserId = GetCurrentUserId()
-        };
+            var validationError = ValidatePlayerRequest(request.Name, request.Position, request.StrongFoot, request.Height, request.Weight);
+            if (validationError is not null)
+                // Hangi oyuncuda hata olduğunu görmek için ismini de mesaja ekledik
+                return BadRequest(new { message = $"{request.Name ?? "Bilinmeyen Oyuncu"}: {validationError}" });
 
-        _context.Players.Add(player);
-        await _context.SaveChangesAsync();
+            var playstyles = request.Playstyles ?? [];
+            var playstyleError = ValidatePlaystyles(playstyles);
+            if (playstyleError is not null)
+                return BadRequest(new { message = $"{request.Name ?? "Bilinmeyen Oyuncu"}: {playstyleError}" });
 
-        return CreatedAtAction(nameof(GetPlayer), new { id = player.Id }, ToDto(player));
+            var pace = ClampScore(request.Pace ?? 50);
+            var shoot = ClampScore(request.Shoot ?? 50);
+            var pass = ClampScore(request.Pass ?? 50);
+            var dribbling = ClampScore(request.Dribbling ?? 50);
+            var def = ClampScore(request.Def ?? 50);
+            var phy = ClampScore(request.Phy ?? 50);
+
+            players.Add(new Player
+            {
+                Name = request.Name.Trim(),
+                Position = request.Position.Trim(),
+                StrongFoot = NormalizeStrongFoot(request.StrongFoot),
+                Height = request.Height,
+                Weight = request.Weight,
+                Overall = request.Overall.HasValue
+                    ? ClampScore(request.Overall.Value)
+                    : CalculateOverall(pace, shoot, pass, dribbling, def, phy),
+                Form = ClampScore(request.Form ?? 50),
+                PrimaryPlaystyle = string.IsNullOrWhiteSpace(request.PrimaryPlaystyle)
+                    ? playstyles.FirstOrDefault() ?? "Dengeli Oyuncu"
+                    : request.PrimaryPlaystyle.Trim(),
+                Playstyles = JoinPlaystyles(playstyles),
+                Pace = pace,
+                Shoot = shoot,
+                Pass = pass,
+                Dribbling = dribbling,
+                Def = def,
+                Phy = phy,
+                CreatedByUserId = userId
+            });
+        }
+
+        try
+        {
+            _context.Players.AddRange(players);
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex)
+        {
+            return StatusCode(500, new { message = ex.InnerException?.Message ?? ex.Message });
+        }
+
+        return Ok(players.Select(ToDto));
     }
 
     [HttpPut("{id:int}")]
@@ -84,11 +129,32 @@ public class PlayersController : ControllerBase
         if (validationError is not null)
             return BadRequest(new { message = validationError });
 
+        var playstyles = request.Playstyles;
+        var playstyleError = ValidatePlaystyles(playstyles ?? []);
+        if (playstyleError is not null)
+            return BadRequest(new { message = playstyleError });
+
+        player.Pace = ClampScore(request.Pace ?? player.Pace);
+        player.Shoot = ClampScore(request.Shoot ?? player.Shoot);
+        player.Pass = ClampScore(request.Pass ?? player.Pass);
+        player.Dribbling = ClampScore(request.Dribbling ?? player.Dribbling);
+        player.Def = ClampScore(request.Def ?? player.Def);
+        player.Phy = ClampScore(request.Phy ?? player.Phy);
+
         player.Name = request.Name.Trim();
         player.Position = request.Position.Trim();
         player.StrongFoot = NormalizeStrongFoot(request.StrongFoot);
         player.Height = request.Height;
         player.Weight = request.Weight;
+        player.Overall = request.Overall.HasValue
+            ? ClampScore(request.Overall.Value)
+            : CalculateOverall(player.Pace, player.Shoot, player.Pass, player.Dribbling, player.Def, player.Phy);
+        player.Form = ClampScore(request.Form ?? player.Form);
+        player.PrimaryPlaystyle = string.IsNullOrWhiteSpace(request.PrimaryPlaystyle)
+            ? playstyles?.FirstOrDefault() ?? player.PrimaryPlaystyle
+            : request.PrimaryPlaystyle.Trim();
+        if (playstyles is not null)
+            player.Playstyles = JoinPlaystyles(playstyles);
         player.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
@@ -112,6 +178,23 @@ public class PlayersController : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("bulk-delete")]
+    public async Task<IActionResult> DeletePlayers([FromBody] BulkDeletePlayersRequest request)
+    {
+        if (request.PlayerIds.Count == 0)
+            return BadRequest(new { message = "En az bir oyuncu id gönderilmelidir." });
+
+        var userId = GetCurrentUserId();
+        var players = await _context.Players
+            .Where(player => player.CreatedByUserId == userId && request.PlayerIds.Contains(player.Id))
+            .ToListAsync();
+
+        _context.Players.RemoveRange(players);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { deletedCount = players.Count });
+    }
+
     private int GetCurrentUserId()
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -130,6 +213,16 @@ public class PlayersController : ControllerBase
             StrongFoot = player.StrongFoot,
             Height = player.Height,
             Weight = player.Weight,
+            Overall = player.Overall,
+            Form = player.Form,
+            PrimaryPlaystyle = player.PrimaryPlaystyle,
+            Playstyles = SplitPlaystyles(player.Playstyles),
+            Pace = player.Pace,
+            Shoot = player.Shoot,
+            Pass = player.Pass,
+            Dribbling = player.Dribbling,
+            Def = player.Def,
+            Phy = player.Phy,
             CreatedAt = player.CreatedAt,
             UpdatedAt = player.UpdatedAt
         };
@@ -166,5 +259,32 @@ public class PlayersController : ControllerBase
     {
         var value = strongFoot.Trim();
         return char.ToUpperInvariant(value[0]) + value[1..].ToLowerInvariant();
+    }
+
+    private static int ClampScore(int value)
+    {
+        return Math.Clamp(value, 1, 99);
+    }
+
+    private static int CalculateOverall(params int[] values)
+    {
+        return ClampScore((int)Math.Round(values.Average()));
+    }
+
+    private static List<string> SplitPlaystyles(string value)
+    {
+        return string.IsNullOrWhiteSpace(value)
+            ? []
+            : value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+    }
+
+    private static string? ValidatePlaystyles(List<string> playstyles)
+    {
+        return playstyles.Any(string.IsNullOrWhiteSpace) ? "Playstyle bos olamaz." : null;
+    }
+
+    private static string JoinPlaystyles(List<string> playstyles)
+    {
+        return string.Join(",", playstyles.Select(playstyle => playstyle.Trim()));
     }
 }

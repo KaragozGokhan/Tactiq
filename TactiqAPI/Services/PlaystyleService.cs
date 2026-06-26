@@ -24,11 +24,17 @@ public class PlaystyleService : IPlaystyleService
         var tackles = lastStats.Sum(stat => stat.Tackles);
         var saves = lastStats.Sum(stat => stat.Saves);
 
+        var analysisLabel = GetPlaystyleLabel(player.Position, goals, assists, shotsOnTarget, successfulPasses, tackles, saves);
+        var playstyles = SplitPlaystyles(player.Playstyles);
+
         return new PlayerPlaystyleDto
         {
             PlayerId = player.Id,
             PlayerName = player.Name,
-            Label = GetPlaystyleLabel(player.Position, goals, assists, shotsOnTarget, successfulPasses, tackles, saves),
+            Label = string.IsNullOrWhiteSpace(player.PrimaryPlaystyle) ? analysisLabel : player.PrimaryPlaystyle,
+            AnalysisLabel = analysisLabel,
+            PrimaryPlaystyle = player.PrimaryPlaystyle,
+            Playstyles = playstyles,
             MatchesAnalyzed = lastStats.Count,
             Goals = goals,
             Assists = assists,
@@ -73,5 +79,12 @@ public class PlaystyleService : IPlaystyleService
             return "Çift Yönlü Hücumcu";
 
         return "Dengeli Oyuncu";
+    }
+
+    private static List<string> SplitPlaystyles(string value)
+    {
+        return string.IsNullOrWhiteSpace(value)
+            ? []
+            : value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
     }
 }

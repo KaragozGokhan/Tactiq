@@ -7,29 +7,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace TactiqAPI.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class InitialCreateAfterCleanCode : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.CreateTable(
-                name: "Matches",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    MatchDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Duration = table.Column<int>(type: "integer", nullable: false),
-                    HomeScore = table.Column<int>(type: "integer", nullable: false),
-                    AwayScore = table.Column<int>(type: "integer", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Matches", x => x.Id);
-                });
-
             migrationBuilder.CreateTable(
                 name: "Users",
                 columns: table => new
@@ -49,6 +31,31 @@ namespace TactiqAPI.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Matches",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    MatchDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Duration = table.Column<int>(type: "integer", nullable: false),
+                    HomeScore = table.Column<int>(type: "integer", nullable: false),
+                    AwayScore = table.Column<int>(type: "integer", nullable: false),
+                    CreatedByUserId = table.Column<int>(type: "integer", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Matches", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Matches_Users_CreatedByUserId",
+                        column: x => x.CreatedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Players",
                 columns: table => new
                 {
@@ -59,6 +66,16 @@ namespace TactiqAPI.Migrations
                     StrongFoot = table.Column<string>(type: "text", nullable: false),
                     Height = table.Column<double>(type: "double precision", nullable: true),
                     Weight = table.Column<double>(type: "double precision", nullable: true),
+                    Overall = table.Column<int>(type: "integer", nullable: false),
+                    Form = table.Column<int>(type: "integer", nullable: false),
+                    PrimaryPlaystyle = table.Column<string>(type: "text", nullable: false),
+                    playstyles = table.Column<string>(type: "text", nullable: false),
+                    pace = table.Column<int>(type: "integer", nullable: false),
+                    shoot = table.Column<int>(type: "integer", nullable: false),
+                    pass = table.Column<int>(type: "integer", nullable: false),
+                    dribbling = table.Column<int>(type: "integer", nullable: false),
+                    def = table.Column<int>(type: "integer", nullable: false),
+                    phy = table.Column<int>(type: "integer", nullable: false),
                     CreatedByUserId = table.Column<int>(type: "integer", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
@@ -114,7 +131,8 @@ namespace TactiqAPI.Migrations
                     ShotsOnTarget = table.Column<int>(type: "integer", nullable: false),
                     SuccessfulPasses = table.Column<int>(type: "integer", nullable: false),
                     Tackles = table.Column<int>(type: "integer", nullable: false),
-                    Saves = table.Column<int>(type: "integer", nullable: false)
+                    Saves = table.Column<int>(type: "integer", nullable: false),
+                    Rating = table.Column<double>(type: "double precision", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -132,6 +150,11 @@ namespace TactiqAPI.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Matches_CreatedByUserId",
+                table: "Matches",
+                column: "CreatedByUserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_MatchPlayers_MatchId",

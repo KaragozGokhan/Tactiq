@@ -76,7 +76,22 @@ Swagger UI: `https://localhost:5001/swagger`
 
 ### Team Builder
 
-- `POST /api/team-builder/balance` - 14 oyuncuyu 7'ye 7 dengeli takıma ayır
+- `POST /api/team-builder/balance` - 6v6-11v11 arası dengeli takım oluştur
+
+Örnek:
+
+```json
+{
+  "teamSize": 7,
+  "formation": "2-3-1",
+  "playerIds": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+}
+```
+
+### Playstyles
+
+- `GET /api/playstyles/players` - Oyuncuların kural bazlı playstyle etiketleri
+- `GET /api/playstyles/players/{playerId}` - Tek oyuncu playstyle etiketi
 
 ## Yapı
 

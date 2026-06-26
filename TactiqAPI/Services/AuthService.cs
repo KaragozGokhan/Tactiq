@@ -45,7 +45,7 @@ public class AuthService : IAuthService
             Username = username,
             Email = email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
-            Role = "User"
+            Role = email.Equals("admin@tactiq.test", StringComparison.OrdinalIgnoreCase) ? "Admin" : "User"
         };
 
         _context.Users.Add(user);

@@ -11,6 +11,7 @@ public class PlayerStats
     public int SuccessfulPasses { get; set; }
     public int Tackles { get; set; }
     public int Saves { get; set; }
+    public double Rating { get; set; } // 1-10
 
     // Relations
     public Match? Match { get; set; }

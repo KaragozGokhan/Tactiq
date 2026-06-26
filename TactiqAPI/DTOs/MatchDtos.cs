@@ -9,6 +9,17 @@ public class CreateMatchRequest
     public List<MatchPlayerRequest> Players { get; set; } = [];
 }
 
+public class CreateBulkMatchRequest
+{
+    public DateTime MatchDate { get; set; }
+    public int Duration { get; set; }
+    public int HomeScore { get; set; }
+    public int AwayScore { get; set; }
+    public double DefaultRating { get; set; }
+    public List<int> HomePlayerIds { get; set; } = [];
+    public List<int> AwayPlayerIds { get; set; } = [];
+}
+
 public class UpdateMatchRequest
 {
     public DateTime MatchDate { get; set; }
@@ -33,6 +44,7 @@ public class PlayerStatsRequest
     public int SuccessfulPasses { get; set; }
     public int Tackles { get; set; }
     public int Saves { get; set; }
+    public double Rating { get; set; }
 }
 
 public class MatchDto
@@ -64,4 +76,5 @@ public class PlayerStatsDto
     public int SuccessfulPasses { get; set; }
     public int Tackles { get; set; }
     public int Saves { get; set; }
+    public double Rating { get; set; }
 }
