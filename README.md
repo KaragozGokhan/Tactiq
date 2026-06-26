@@ -1,6 +1,6 @@
 # Tactiq
 
-AI destekli hale gelebilecek futbol kadro kurma ve oyuncu performans takip uygulamasi.
+AI destekli futbol kadro kurma ve oyuncu performans takip uygulamasi.
 
 - API: `TactiqAPI/`
 - Web test UI: `TactiqWeb/index.html`
